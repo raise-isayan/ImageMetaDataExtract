@@ -28,7 +28,7 @@ public class BurpExtension extends BurpExtensionImpl {
     @Override
     public void initialize(MontoyaApi api) {
         super.initialize(api);
-        api().extension().setName("MetaDataExtract");
+        api().extension().setName("ImageMetaDataExtract");
         api().userInterface().registerHttpResponseEditorProvider(this.responseMetaDataTab);
     }
 

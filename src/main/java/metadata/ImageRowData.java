@@ -11,9 +11,9 @@ import com.drew.metadata.Tag;
  *
  * @author isayan
  */
-public class MetaDataView implements ObjectTableMapping {
+public class ImageRowData implements ObjectTableMapping {
 
-    private final static Logger logger = Logger.getLogger(MetaDataView.class.getName());
+    private final static Logger logger = Logger.getLogger(ImageRowData.class.getName());
 
     private final String[] columns = new String[]{
         "Category", "Name", "Type", "Description"
@@ -22,7 +22,7 @@ public class MetaDataView implements ObjectTableMapping {
     private final Directory directory;
     private final Tag tag;
 
-    public MetaDataView(Directory directory, Tag tag) {
+    public ImageRowData(Directory directory, Tag tag) {
         this.directory = directory;
         this.tag = tag;
     }

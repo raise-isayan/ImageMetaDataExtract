@@ -8,7 +8,7 @@ import javax.swing.table.TableModel;
  *
  * @author isayan
  */
-public class MetaDataModel extends DefaultObjectTableModel<MetaDataView> {
+public class MetaDataModel extends DefaultObjectTableModel<ImageRowData> {
 
     private final static Logger logger = Logger.getLogger(MetaDataModel.class.getName());
 

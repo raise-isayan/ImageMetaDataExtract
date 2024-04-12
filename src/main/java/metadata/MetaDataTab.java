@@ -1,6 +1,5 @@
 package metadata;
 
-import burp.MetaData;
 import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.api.montoya.http.message.responses.HttpResponse;
@@ -92,7 +91,7 @@ public class MetaDataTab extends javax.swing.JPanel implements ExtensionProvided
     private MetaDataModel modelMetaData = null;
     private HttpRequestResponse httpRequestResponse;
 
-    private final MetaData metaData = new MetaData();
+    private final ImageMetaExtract metaData = new ImageMetaExtract();
 
     private void customizeComponents() {
         this.modelMetaData = new MetaDataModel(this.tableMetaData.getModel());
@@ -130,12 +129,12 @@ public class MetaDataTab extends javax.swing.JPanel implements ExtensionProvided
         this.httpRequestResponse = httpRequestResponse;
         HttpResponse response = this.httpRequestResponse.response();
         if (response != null) {
-            SwingWorker swText = new SwingWorker<List<MetaDataView>, Object>() {
+            SwingWorker swText = new SwingWorker<List<ImageRowData>, Object>() {
                 @Override
-                protected List<MetaDataView> doInBackground() throws Exception {
+                protected List<ImageRowData> doInBackground() throws Exception {
                     ByteArrayInputStream istm = new ByteArrayInputStream(response.body().getBytes());
-                    List<MetaDataView> views = metaData.getMetaData(istm);
-                    return views;
+                    ImageMetaData meta = metaData.getMetaData(istm);
+                    return meta.getMetaData();
                 }
 
                 @Override
@@ -145,9 +144,9 @@ public class MetaDataTab extends javax.swing.JPanel implements ExtensionProvided
                 @Override
                 protected void done() {
                     try {
-                        List<MetaDataView> views = get();
+                        List<ImageRowData> views = get();
                         modelMetaData.removeAll();
-                        for (MetaDataView view : views) {
+                        for (ImageRowData view : views) {
                             modelMetaData.addRow(view);
                         }
                     } catch (InterruptedException | ExecutionException ex) {
@@ -169,8 +168,8 @@ public class MetaDataTab extends javax.swing.JPanel implements ExtensionProvided
         HttpResponse response = httpRequestResponse.response();
         try {
             if (httpRequestResponse.hasResponse() && response.body().length() > 0) {
-                List<MetaDataView> views = this.metaData.getMetaData(new ByteArrayInputStream(response.body().getBytes()));
-                return !views.isEmpty();
+                ImageMetaData meta = this.metaData.getMetaData(new ByteArrayInputStream(response.body().getBytes()));
+                return meta.hasMetaData();
             }
         } catch (IOException ex) {
             return false;
@@ -180,7 +179,7 @@ public class MetaDataTab extends javax.swing.JPanel implements ExtensionProvided
 
     @Override
     public String caption() {
-        return "MetaData";
+        return "ImageMeta";
     }
 
     @Override
