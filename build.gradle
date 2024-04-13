@@ -22,6 +22,25 @@ shadowJar {
    archiveVersion =  "v${release_version_major}"
 }
 
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+processResources {
+    filteringCharset = 'UTF-8'
+    filesMatching ('**/*.properties') {
+       expand(project.properties)
+       // naitive2ascii
+       filter(org.apache.tools.ant.filters.EscapeUnicode)
+    }
+}
+
+clean.doFirst {
+    delete fileTree('release') {
+      include '*.jar'
+    }
+}
+
 task release(type: Zip, dependsOn: ['build']) {
     archiveBaseName ="${rootProject.name}_v${release_version_major}.${release_version_minor}"
     destinationDirectory = file("${projectDir}")
