@@ -47,6 +47,7 @@ task release(type: Zip, dependsOn: ['build']) {
     from rootProject.rootDir
     include '*'
     include 'gradle/**'
+    include 'image/**'
     include 'src/**'
     include 'release/*.jar'
     exclude 'build'

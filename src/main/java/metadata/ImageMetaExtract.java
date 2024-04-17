@@ -42,7 +42,6 @@ public class ImageMetaExtract {
      */
     public static void main(String[] args) {
         String targetFileName = null;
-        boolean debug = false;
         try {
             for (String arg : args) {
                 // single parameter
