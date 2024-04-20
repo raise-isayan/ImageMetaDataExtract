@@ -161,10 +161,6 @@ public class MetaDataTab extends javax.swing.JPanel implements ExtensionProvided
 
     @Override
     public boolean isEnabledFor(HttpRequestResponse httpRequestResponse) {
-//        if ((httpRequestResponse.request() != null && httpRequestResponse.request().toByteArray().length() == 0 && httpRequestResponse.response() == null)
-//                || (httpRequestResponse.response() != null && httpRequestResponse.response().toByteArray().length() == 0)) {
-//            return true;
-//        }
         try {
             HttpResponseWapper wrapResponse = new HttpResponseWapper(httpRequestResponse.response());
             if (wrapResponse.hasHttpResponse() && wrapResponse.getBodyByte().length > 0) {

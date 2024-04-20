@@ -1,9 +1,14 @@
 package metadata;
 
+import com.drew.imaging.FileType;
+import com.drew.imaging.FileTypeDetector;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
 import com.drew.metadata.file.FileTypeDirectory;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -56,6 +61,19 @@ public class ImageMetaData {
         return !views.isEmpty();
     }
 
+    public FileType getFileType() {
+        FileType fileType = FileType.Unknown;
+        String fileTypeName = getFileTypeName();
+        FileType[] types = FileType.values();
+        for (FileType t : types) {
+            if (t.getName().equals(fileTypeName)) {
+                fileType = t;
+                break;
+            }
+        }
+        return fileType;
+    }
+
     public String getFileTypeName() {
         FileTypeDirectory fileType = metadata.getFirstDirectoryOfType(FileTypeDirectory.class);
         return fileType.getString(FileTypeDirectory.TAG_DETECTED_FILE_TYPE_NAME);
@@ -69,6 +87,43 @@ public class ImageMetaData {
     public String getFileMimeType() {
         FileTypeDirectory fileType = metadata.getFirstDirectoryOfType(FileTypeDirectory.class);
         return fileType.getString(FileTypeDirectory.TAG_DETECTED_FILE_MIME_TYPE);
+    }
+
+    public static FileType detectFileType(InputStream istm) throws IOException {
+        if (istm.markSupported()) {
+            return FileTypeDetector.detectFileType(istm);
+        } else {
+            return FileTypeDetector.detectFileType(new BufferedInputStream(istm));
+        }
+    }
+
+    public static boolean supportFileType(FileType fileType) {
+        switch (fileType) {
+            case Jpeg:
+            case Tiff:
+            case Arw:
+            case Cr2:
+            case Nef:
+            case Orf:
+            case Rw2:
+            case Psd:
+            case Png:
+            case Bmp:
+            case Gif:
+            case Ico:
+            case Pcx:
+            case WebP:
+            case Raf:
+            case Avi:
+            case Wav:
+            case QuickTime:
+            case Mp4:
+            case Mp3:
+            case Eps:
+            case Heif:
+                return true;
+        }
+        return false;
     }
 
 }

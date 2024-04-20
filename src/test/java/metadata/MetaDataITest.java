@@ -1,5 +1,6 @@
 package metadata;
 
+import com.drew.imaging.FileType;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -54,6 +55,23 @@ public class MetaDataITest {
         MetaDataITest.class.getResource("/resources/test.jpg"),
     };
 
+    private final URL[] IMAGE_DOCUMENT_URLS = new URL[]{
+        MetaDataITest.class.getResource("/resources/test.pdf"),
+    };
+
+    @Test
+    public void testFileType() {
+        System.out.println("testFileType");
+        String ext = FileType.Png.getName();
+        FileType[] types = FileType.values();
+        for (FileType t : types) {
+            if (t.getName().equals(ext)) {
+                System.out.println(t.toString());
+            }
+        }
+    }
+
+
     /**
      * Test of getMetaData method, of class MetaData.
      */
@@ -67,6 +85,7 @@ public class MetaDataITest {
                     System.out.println("url:" + u.toURI());
                     FileInputStream istm = new FileInputStream(Paths.get(u.toURI()).toFile());
                     ImageMetaData metadata = imageMeta.getMetaData(istm);
+                    System.out.println("FileType:" + metadata.getFileType());
                     System.out.println("FileTypeName:" + metadata.getFileTypeName());
                     System.out.println("FileTypeExtension:" + metadata.getFileTypeExtension());
                     System.out.println("FileMimeType:" + metadata.getFileMimeType());
@@ -93,6 +112,7 @@ public class MetaDataITest {
                     System.out.println("url:" + u.toURI());
                     FileInputStream istm = new FileInputStream(Paths.get(u.toURI()).toFile());
                     ImageMetaData metadata = imageMeta.getMetaData(istm);
+                    System.out.println("FileType:" + metadata.getFileType());
                     System.out.println("FileTypeName:" + metadata.getFileTypeName());
                     System.out.println("FileTypeExtension:" + metadata.getFileTypeExtension());
                     System.out.println("FileMimeType:" + metadata.getFileMimeType());
@@ -122,6 +142,7 @@ public class MetaDataITest {
                 System.out.println("url:" + u.toURI());
                 FileInputStream istm = new FileInputStream(Paths.get(u.toURI()).toFile());
                 ImageMetaData metadata = imageMeta.getMetaData(istm);
+                System.out.println("FileType:" + metadata.getFileType());
                 System.out.println("FileTypeName:" + metadata.getFileTypeName());
                 System.out.println("FileTypeExtension:" + metadata.getFileTypeExtension());
                 System.out.println("FileMimeType:" + metadata.getFileMimeType());
@@ -137,6 +158,25 @@ public class MetaDataITest {
                 }
             } catch (URISyntaxException | IOException ex) {
                 fail(ex);
+            }
+        }
+    }
+
+    @Test
+    public void testDetectFile() {
+        System.out.println("detectFile");
+        {
+            for (URL u : IMAGE_DOCUMENT_URLS) {
+//            for (URL u : IMAGE_URLS) {
+                try {
+                    System.out.println("url:" + u.toURI());
+                    FileInputStream istm = new FileInputStream(Paths.get(u.toURI()).toFile());
+                    FileType type = ImageMetaData.detectFileType(istm);
+                    System.out.println("type:" + type.getName());
+                } catch (URISyntaxException | IOException ex) {
+                    System.out.println("exception:" + ex.getClass().getName() + ":" + ex.getMessage());
+//                    fail(ex);
+                }
             }
         }
     }

@@ -53,6 +53,10 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                     // Response判定
                     HttpResponseWapper wrapResponse = new HttpResponseWapper(baseRequestResponse.response());
                     if (wrapResponse.hasHttpResponse() && wrapResponse.getBodyByte().length > 0) {
+//                        FileType fileType = ImageMetaExtract.detectFileType(new ByteArrayInputStream(wrapResponse.getBodyByte()));
+//                        if (!ImageMetaExtract.supportFileType(fileType)) {
+//                            return AuditResult.auditResult(issues);
+//                        }
                         List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
                         ImageMetaData imageMeta = meta.getMetaData(new ByteArrayInputStream(wrapResponse.getBodyByte()));
                         if (imageMeta.hasMetaData()) {
