@@ -16,6 +16,7 @@ import extension.burp.scanner.IssueItem;
 import extension.burp.scanner.ScannerCheckAdapter;
 import extension.burp.scanner.SignatureScanBase;
 import extension.helpers.HttpResponseWapper;
+import extension.helpers.HttpUtil;
 import extension.helpers.MatchUtil;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -48,16 +49,48 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
             @Override
             public AuditResult passiveAudit(HttpRequestResponse baseRequestResponse) {
                 List<AuditIssue> issues = new ArrayList<>();
-                // Response判定
-                HttpResponseWapper wrapResponse = new HttpResponseWapper(baseRequestResponse.response());
-                if (wrapResponse.hasHttpResponse()) {
-                    try {
+                try {
+                    // Response判定
+                    HttpResponseWapper wrapResponse = new HttpResponseWapper(baseRequestResponse.response());
+                    if (wrapResponse.hasHttpResponse() && wrapResponse.getBodyByte().length > 0) {
                         List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
-                        ImageMetaData imageMeta = meta.getMetaData(new ByteArrayInputStream(wrapResponse.getMessageByte()));
+                        ImageMetaData imageMeta = meta.getMetaData(new ByteArrayInputStream(wrapResponse.getBodyByte()));
                         if (imageMeta.hasMetaData()) {
                             Map<String, List<ImageRowData>> metaGroup = imageMeta.getMetaDataGrop();
                             for (String key : metaGroup.keySet()) {
                                 List<ImageRowData> rows = metaGroup.get(key);
+                                /* Content-Type Mismatch */
+                                if (wrapResponse.getContentMimeType() != null && !imageMeta.getFileMimeType().equals(wrapResponse.getContentMimeType())) {
+                                    final StringBuilder detail = new StringBuilder();
+                                    detail.append("<h4>Content-Type mismatch of image:</h4>");
+                                    detail.append("<div>");
+                                    detail.append("<p>Response Content-Type Header:</p>");
+                                    detail.append("<code>");
+                                    detail.append(wrapResponse.getContentMimeType());
+                                    detail.append("</code>");
+                                    detail.append("<p>Image of MimeType:</p>");
+                                    detail.append("<code>");
+                                    detail.append(imageMeta.getFileMimeType());
+                                    detail.append("</code>");
+
+                                    final String ISSUE_BACKGROUND = "\r\n"
+                                        + "<h4>Content-Type mismatch of image:</h4>"
+                                        + "<ul>"
+                                        + "Response Content-Type and image format mismatch"
+                                        + "</ul>";
+
+                                    AuditIssue issueItem = AuditIssue.auditIssue(
+                                        getIssueName(),
+                                        detail.toString(),
+                                        null,
+                                        baseRequestResponse.request().url(),
+                                        AuditIssueSeverity.INFORMATION, AuditIssueConfidence.CERTAIN,
+                                        ISSUE_BACKGROUND,
+                                        null,
+                                        AuditIssueSeverity.INFORMATION,
+                                        baseRequestResponse);
+                                    issues.add(issueItem);
+                                }
                                 /* JPEG */
                                 if (((FileType.Jpeg.getName().equals(imageMeta.getFileTypeName()) && key.startsWith("JpegComment")))) {
                                     // メールアドレス含む場合はリスクをあげる
@@ -143,9 +176,9 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                             }
                         }
                         issues.addAll(makeIssueList(false, baseRequestResponse, issueList));
-                    } catch (IOException ex) {
-                        logger.log(Level.SEVERE, null, ex);
                     }
+                } catch (IOException ex) {
+                    logger.log(Level.SEVERE, ex.getMessage(), ex);
                 }
                 return AuditResult.auditResult(issues);
             }
@@ -179,14 +212,14 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
             }
 
             final String ISSUE_BACKGROUND = "\r\n"
-                    + "<h4>Image meta data:</h4>"
-                    + "<ul>"
-                    + "Extract metadata."
-                    + "</ul>"
-                    + "<h4>Reference:</h4>"
-                    + "<ul>"
-                    + "  <li><a href=\"https://github.com/drewnoakes/metadata-extractor/\">https://github.com/drewnoakes/metadata-extractor/</a></li>"
-                    + "</ul>";
+                + "<h4>Image meta data:</h4>"
+                + "<ul>"
+                + "Extract metadata."
+                + "</ul>"
+                + "<h4>Reference:</h4>"
+                + "<ul>"
+                + "  <li><a href=\"https://github.com/drewnoakes/metadata-extractor/\">https://github.com/drewnoakes/metadata-extractor/</a></li>"
+                + "</ul>";
 
             @Override
             public String name() {
@@ -203,17 +236,21 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                 buff.append("<h4>Image meta data:</h4>");
                 for (ImageMetaDataIssueItem markItem : issueItems) {
                     buff.append("<div>");
-                    buff.append("<h4>");
-                    buff.append(markItem.getCategory());
-                    buff.append("</h4");
-                    buff.append("<ul>");
-                    for (ImageRowData row: markItem.getMetaRows()) {
-                        buff.append("<li>");
-                        buff.append(String.format("%s: %s", row.getTag().getTagName(), row.getTag().getDescription()));
-                        buff.append("</li>");
+                    buff.append("<strong>");
+                    buff.append(HttpUtil.toHtmlEncode(markItem.getCategory()));
+                    buff.append("</strong>");
+                    buff.append("<table>");
+                    for (ImageRowData row : markItem.getMetaRows()) {
+                        buff.append("<tr>");
+                            buff.append("<td>");
+                            buff.append(HttpUtil.toHtmlEncode(row.getTag().getTagName()));
+                            buff.append("</td>");
+                            buff.append("<td>");
+                            buff.append(HttpUtil.toHtmlEncode(row.getTag().getDescription()));
+                            buff.append("</td>");
+                        buff.append("</tr>");
                     }
-                    buff.append("</ul>");
-                    buff.append("</div>");
+                    buff.append("</table>");
                 }
                 return buff.toString();
             }

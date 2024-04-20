@@ -2,10 +2,10 @@ package metadata;
 
 import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.http.message.HttpRequestResponse;
-import burp.api.montoya.http.message.responses.HttpResponse;
 import burp.api.montoya.ui.Selection;
 import burp.api.montoya.ui.editor.extension.EditorCreationContext;
 import burp.api.montoya.ui.editor.extension.ExtensionProvidedEditor;
+import extension.helpers.HttpResponseWapper;
 import extension.view.base.CustomTableModel;
 import java.awt.Component;
 import java.io.ByteArrayInputStream;
@@ -127,12 +127,12 @@ public class MetaDataTab extends javax.swing.JPanel implements ExtensionProvided
     @Override
     public void setRequestResponse(HttpRequestResponse httpRequestResponse) {
         this.httpRequestResponse = httpRequestResponse;
-        HttpResponse response = this.httpRequestResponse.response();
-        if (response != null) {
+        HttpResponseWapper wrapResponse = new HttpResponseWapper(this.httpRequestResponse.response());
+        if (wrapResponse.hasHttpResponse()) {
             SwingWorker swText = new SwingWorker<List<ImageRowData>, Object>() {
                 @Override
                 protected List<ImageRowData> doInBackground() throws Exception {
-                    ByteArrayInputStream istm = new ByteArrayInputStream(response.body().getBytes());
+                    ByteArrayInputStream istm = new ByteArrayInputStream(wrapResponse.getBodyByte());
                     ImageMetaData meta = metaData.getMetaData(istm);
                     return meta.getMetaData();
                 }
@@ -165,10 +165,10 @@ public class MetaDataTab extends javax.swing.JPanel implements ExtensionProvided
 //                || (httpRequestResponse.response() != null && httpRequestResponse.response().toByteArray().length() == 0)) {
 //            return true;
 //        }
-        HttpResponse response = httpRequestResponse.response();
         try {
-            if (httpRequestResponse.hasResponse() && response.body().length() > 0) {
-                ImageMetaData meta = this.metaData.getMetaData(new ByteArrayInputStream(response.body().getBytes()));
+            HttpResponseWapper wrapResponse = new HttpResponseWapper(httpRequestResponse.response());
+            if (wrapResponse.hasHttpResponse() && wrapResponse.getBodyByte().length > 0) {
+                ImageMetaData meta = this.metaData.getMetaData(new ByteArrayInputStream(wrapResponse.getBodyByte()));
                 return meta.hasMetaData();
             }
         } catch (IOException ex) {
