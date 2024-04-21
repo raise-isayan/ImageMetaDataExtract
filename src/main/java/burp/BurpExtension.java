@@ -7,7 +7,7 @@ import burp.api.montoya.ui.editor.extension.HttpResponseEditorProvider;
 import extension.burp.BurpExtensionImpl;
 import java.util.logging.Logger;
 import metadata.MetaDataEditor;
-import passive.signature.ImageMetaDataScan;
+import passive.signature.ImageMetaDataSignature;
 
 /**
  *
@@ -31,8 +31,8 @@ public class BurpExtension extends BurpExtensionImpl {
         super.initialize(api);
         api().extension().setName("ImageMetaDataExtract");
         api().userInterface().registerHttpResponseEditorProvider(this.responseMetaDataTab);
-        final ImageMetaDataScan imageScan = new ImageMetaDataScan();
-        api().scanner().registerScanCheck(imageScan.passiveScanCheck());
+        ImageMetaDataSignature signature = new ImageMetaDataSignature();
+        api().scanner().registerScanCheck(signature.getSignatureScan().passiveScanCheck());
     }
 
 }

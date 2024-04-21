@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -57,7 +58,6 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
 //                        if (!ImageMetaExtract.supportFileType(fileType)) {
 //                            return AuditResult.auditResult(issues);
 //                        }
-                        List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
                         ImageMetaData imageMeta = meta.getMetaData(new ByteArrayInputStream(wrapResponse.getBodyByte()));
                         if (imageMeta.hasMetaData()) {
                             Map<String, List<ImageRowData>> metaGroup = imageMeta.getMetaDataGrop();
@@ -65,17 +65,22 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                                 List<ImageRowData> rows = metaGroup.get(key);
                                 /* Content-Type Mismatch */
                                 if (wrapResponse.getContentMimeType() != null && !imageMeta.getFileMimeType().equals(wrapResponse.getContentMimeType())) {
+                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
                                     final StringBuilder detail = new StringBuilder();
                                     detail.append("<h4>Content-Type mismatch of image:</h4>");
                                     detail.append("<div>");
                                     detail.append("<p>Response Content-Type Header:</p>");
+                                    detail.append("<p>");
                                     detail.append("<code>");
                                     detail.append(wrapResponse.getContentMimeType());
                                     detail.append("</code>");
+                                    detail.append("</p>");
                                     detail.append("<p>Image of MimeType:</p>");
+                                    detail.append("<p>");
                                     detail.append("<code>");
                                     detail.append(imageMeta.getFileMimeType());
                                     detail.append("</code>");
+                                    detail.append("</p>");
 
                                     final String ISSUE_BACKGROUND = "\r\n"
                                         + "<h4>Content-Type mismatch of image:</h4>"
@@ -94,9 +99,11 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                                         AuditIssueSeverity.INFORMATION,
                                         baseRequestResponse);
                                     issues.add(issueItem);
+                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
                                 }
                                 /* JPEG */
                                 if (((FileType.Jpeg.getName().equals(imageMeta.getFileTypeName()) && key.startsWith("JpegComment")))) {
+                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
                                     // メールアドレス含む場合はリスクをあげる
                                     boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
                                     ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
@@ -111,11 +118,13 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                                     issueItem.setCategory(key);
                                     issueItem.setMetaRows(rows);
                                     issueList.add(issueItem);
+                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
                                 }
                                 if (((FileType.Jpeg.getName().equals(imageMeta.getFileTypeName()))
                                         || (FileType.Tiff.getName().equals(imageMeta.getFileTypeName()))
                                         || (FileType.Heif.getName().equals(imageMeta.getFileTypeName())))
                                         && key.startsWith("Exif ")) {
+                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
                                     // メールアドレス含む場合はリスクをあげる
                                     boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
                                     ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
@@ -130,10 +139,12 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                                     issueItem.setCategory(key);
                                     issueItem.setMetaRows(rows);
                                     issueList.add(issueItem);
+                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
                                 } else if (((FileType.Jpeg.getName().equals(imageMeta.getFileTypeName()))
                                         || (FileType.Tiff.getName().equals(imageMeta.getFileTypeName()))
                                         || (FileType.Heif.getName().equals(imageMeta.getFileTypeName())))
                                         && key.startsWith("GPS")) {
+                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
                                     ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
                                     issueItem.setType(imageMeta.getFileTypeName() + " " + "GPS");
                                     issueItem.setMessageIsRequest(false);
@@ -143,10 +154,12 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                                     issueItem.setCategory(key);
                                     issueItem.setMetaRows(rows);
                                     issueList.add(issueItem);
+                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
                                 }
                                 /* PNG */
                                 if (FileType.Png.getName().equals(imageMeta.getFileTypeName())
                                         && key.startsWith("PNG-tEXt")) {
+                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
                                     // メールアドレス含む場合はリスクをあげる
                                     boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
                                     ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
@@ -161,10 +174,12 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                                     issueItem.setCategory(key);
                                     issueItem.setMetaRows(rows);
                                     issueList.add(issueItem);
+                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
                                 }
                                 /* GIF */
                                 if ((FileType.Gif.getName().equals(imageMeta.getFileTypeName()) && key.startsWith("GIF Comment"))) {
                                     boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
+                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
                                     ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
                                     issueItem.setType(imageMeta.getFileTypeName() + " " + "Comment");
                                     issueItem.setMessageIsRequest(false);
@@ -176,10 +191,10 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                                     issueItem.setCaptureValue("");
                                     issueItem.setMetaRows(rows);
                                     issueList.add(issueItem);
+                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
                                 }
                             }
                         }
-                        issues.addAll(makeIssueList(false, baseRequestResponse, issueList));
                     }
                 } catch (IOException ex) {
                     logger.log(Level.SEVERE, ex.getMessage(), ex);
@@ -187,20 +202,6 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                 return AuditResult.auditResult(issues);
             }
         };
-    }
-
-    public List<AuditIssue> makeIssueList(boolean messageIsRequest, HttpRequestResponse baseRequestResponse, List<ImageMetaDataIssueItem> markIssueList) {
-        List<ImageMetaDataIssueItem> markList = new ArrayList<>();
-        for (int i = 0; i < markIssueList.size(); i++) {
-            ImageMetaDataIssueItem item = markIssueList.get(i);
-            markList.add(item);
-        }
-        List<AuditIssue> issues = new ArrayList<>();
-        if (!markList.isEmpty()) {
-            HttpRequestResponse applyMarks = applyMarkers(baseRequestResponse, markList);
-            issues.add(makeScanIssue(applyMarks, markList));
-        }
-        return issues;
     }
 
     public AuditIssue makeScanIssue(HttpRequestResponse messageInfo, List<ImageMetaDataIssueItem> issueItems) {
