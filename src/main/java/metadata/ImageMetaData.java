@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -97,33 +99,44 @@ public class ImageMetaData {
         }
     }
 
+    private final static EnumSet<FileType> SUPPORT_FILE_TYPES = EnumSet.of(
+            FileType.Jpeg,
+            FileType.Tiff,
+            FileType.Arw,
+            FileType.Cr2,
+            FileType.Nef,
+            FileType.Orf,
+            FileType.Rw2,
+            FileType.Psd,
+            FileType.Png,
+            FileType.Bmp,
+            FileType.Gif,
+            FileType.Ico,
+            FileType.Pcx,
+            FileType.WebP,
+            FileType.Raf,
+            FileType.Avi,
+            FileType.Wav,
+            FileType.QuickTime,
+            FileType.Mp4,
+            FileType.Mp3,
+            FileType.Eps,
+            FileType.Heif
+    );
+
     public static boolean supportFileType(FileType fileType) {
-        switch (fileType) {
-            case Jpeg:
-            case Tiff:
-            case Arw:
-            case Cr2:
-            case Nef:
-            case Orf:
-            case Rw2:
-            case Psd:
-            case Png:
-            case Bmp:
-            case Gif:
-            case Ico:
-            case Pcx:
-            case WebP:
-            case Raf:
-            case Avi:
-            case Wav:
-            case QuickTime:
-            case Mp4:
-            case Mp3:
-            case Eps:
-            case Heif:
-                return true;
+        return SUPPORT_FILE_TYPES.contains(fileType);
+    }
+
+    public static boolean supportMimeType(String mimeType) {
+        for (Iterator<FileType> ite = SUPPORT_FILE_TYPES.iterator(); ite.hasNext(); ) {
+            FileType fileType  = ite.next();
+            if (fileType.getMimeType().equals(mimeType)) {
+               return true;
+            }
         }
         return false;
     }
+
 
 }

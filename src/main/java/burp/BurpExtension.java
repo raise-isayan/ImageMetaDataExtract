@@ -17,6 +17,8 @@ public class BurpExtension extends BurpExtensionImpl {
 
     private final static Logger logger = Logger.getLogger(BurpExtension.class.getName());
 
+    private final static java.util.ResourceBundle BUNDLE = java.util.ResourceBundle.getBundle("burp/resources/release");
+
     private final HttpResponseEditorProvider responseMetaDataTab = new HttpResponseEditorProvider() {
 
         @Override
@@ -29,7 +31,7 @@ public class BurpExtension extends BurpExtensionImpl {
     @Override
     public void initialize(MontoyaApi api) {
         super.initialize(api);
-        api().extension().setName("ImageMetaDataExtract");
+        api().extension().setName(BUNDLE.getString("projname"));
         api().userInterface().registerHttpResponseEditorProvider(this.responseMetaDataTab);
         ImageMetaDataSignature signature = new ImageMetaDataSignature();
         api().scanner().registerScanCheck(signature.getSignatureScan().passiveScanCheck());

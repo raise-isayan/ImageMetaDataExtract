@@ -22,7 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -64,7 +63,10 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                             for (String key : metaGroup.keySet()) {
                                 List<ImageRowData> rows = metaGroup.get(key);
                                 /* Content-Type Mismatch */
-                                if (wrapResponse.getContentMimeType() != null && !imageMeta.getFileMimeType().equals(wrapResponse.getContentMimeType())) {
+                                String mimeType = wrapResponse.getContentMimeType();
+                                if (mimeType != null &&
+                                    (!mimeType.equals(imageMeta.getFileMimeType()) ||
+                                    (imageMeta.getFileType() ==  FileType.Unknown && ImageMetaData.supportMimeType(mimeType)))) {
                                     List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
                                     final StringBuilder detail = new StringBuilder();
                                     detail.append("<h4>Content-Type mismatch of image:</h4>");
@@ -72,13 +74,13 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                                     detail.append("<p>Response Content-Type Header:</p>");
                                     detail.append("<p>");
                                     detail.append("<code>");
-                                    detail.append(wrapResponse.getContentMimeType());
+                                    detail.append(HttpUtil.toHtmlEncode(mimeType));
                                     detail.append("</code>");
                                     detail.append("</p>");
                                     detail.append("<p>Image of MimeType:</p>");
                                     detail.append("<p>");
                                     detail.append("<code>");
-                                    detail.append(imageMeta.getFileMimeType());
+                                    detail.append(HttpUtil.toHtmlEncode(imageMeta.getFileMimeType()));
                                     detail.append("</code>");
                                     detail.append("</p>");
 
