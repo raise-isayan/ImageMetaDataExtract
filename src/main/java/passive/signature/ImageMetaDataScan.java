@@ -66,8 +66,7 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                                 String mimeType = wrapResponse.getContentMimeType();
                                 if (mimeType != null &&
                                     (!mimeType.equals(imageMeta.getFileMimeType()) ||
-                                    (imageMeta.getFileType() ==  FileType.Unknown && ImageMetaData.supportMimeType(mimeType)))) {
-                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
+                                    (FileType.Unknown.equals(imageMeta.getFileType()) && ImageMetaData.supportMimeType(mimeType)))) {
                                     final StringBuilder detail = new StringBuilder();
                                     detail.append("<h4>Content-Type mismatch of image:</h4>");
                                     detail.append("<div>");
@@ -80,7 +79,12 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                                     detail.append("<p>Image of MimeType:</p>");
                                     detail.append("<p>");
                                     detail.append("<code>");
-                                    detail.append(HttpUtil.toHtmlEncode(imageMeta.getFileMimeType()));
+                                    if (imageMeta.getFileMimeType() != null) {
+                                        detail.append(HttpUtil.toHtmlEncode(imageMeta.getFileMimeType()));
+                                    }
+                                    else {
+                                        detail.append(FileType.Unknown.getName());
+                                    }
                                     detail.append("</code>");
                                     detail.append("</p>");
 
@@ -101,7 +105,6 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
                                         AuditIssueSeverity.INFORMATION,
                                         baseRequestResponse);
                                     issues.add(issueItem);
-                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
                                 }
                                 /* JPEG */
                                 if (((FileType.Jpeg.getName().equals(imageMeta.getFileTypeName()) && key.startsWith("JpegComment")))) {
