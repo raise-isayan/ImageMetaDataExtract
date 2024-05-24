@@ -18,5 +18,4 @@ public class ImageMetaDataSignature extends SignatureItem {
         this(new ImageMetaDataScan(), Severity.LOW);
     }
 
-
 }

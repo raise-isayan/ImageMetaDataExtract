@@ -43,5 +43,4 @@ public class ImageMetaDataIssueItem extends IssueItem {
         this.rows = rows;
     }
 
-
 }

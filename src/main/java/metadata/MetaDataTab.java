@@ -4,7 +4,7 @@ import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.api.montoya.ui.Selection;
 import burp.api.montoya.ui.editor.extension.EditorCreationContext;
-import burp.api.montoya.ui.editor.extension.ExtensionProvidedEditor;
+import extension.burp.IBurpMessageTab;
 import extension.helpers.HttpResponseWapper;
 import extension.view.base.CustomTableModel;
 import java.awt.Component;
@@ -20,7 +20,7 @@ import javax.swing.SwingWorker;
  *
  * @author isayan
  */
-public class MetaDataTab extends javax.swing.JPanel implements ExtensionProvidedEditor {
+public class MetaDataTab extends javax.swing.JPanel implements IBurpMessageTab {
 
     private final static Logger logger = Logger.getLogger(MetaDataTab.class.getName());
 
@@ -120,6 +120,7 @@ public class MetaDataTab extends javax.swing.JPanel implements ExtensionProvided
 
     }
 
+    @Override
     public HttpRequestResponse getHttpRequestResponse() {
         return this.httpRequestResponse;
     }
@@ -150,7 +151,7 @@ public class MetaDataTab extends javax.swing.JPanel implements ExtensionProvided
                             modelMetaData.addRow(view);
                         }
                     } catch (InterruptedException | ExecutionException ex) {
-                        logger.log(Level.SEVERE, null, ex);
+                        logger.log(Level.SEVERE, ex.getMessage(), ex);
                     }
                 }
             };
