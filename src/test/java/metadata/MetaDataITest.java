@@ -1,6 +1,7 @@
 package metadata;
 
 import com.drew.imaging.FileType;
+import extension.helpers.HttpMessageWapper;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -8,6 +9,8 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
 import static org.junit.jupiter.api.Assertions.*;
@@ -180,5 +183,21 @@ public class MetaDataITest {
             }
         }
     }
+
+
+    public final static Pattern HTTP_LINESEP = Pattern.compile("\\r\\n\\r\\n");
+
+
+    @Test
+    public void testCrlf() {
+        System.out.println("testCrlf");
+        String target = "aaaa\r\n\r\nxxxx";
+        Pattern p = Pattern.compile("\\r\\n\\r\\n");
+        Matcher m = p.matcher(target);
+        System.out.println("bfore msg:" + target);
+        String msg = m.replaceAll(HttpMessageWapper.LINE_TERMINATE);
+        System.out.println("after msg:" + msg);
+    }
+
 
 }
