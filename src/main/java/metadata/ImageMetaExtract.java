@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,63 +39,67 @@ public class ImageMetaExtract {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        String targetFileName = null;
         try {
-            for (String arg : args) {
-                // single parameter
-                if ("-v".equals(arg)) {
-                    System.out.println("Version: " + getVersion());
-                    System.out.println("Language: " + Locale.getDefault().getLanguage());
-                    System.exit(0);
-                }
-                if ("-h".equals(arg)) {
-                    usage();
-                    System.exit(0);
-                }
-                String[] param = arg.split("=", 2);
-                if (param.length < 2) {
+            ImageMetaExtract m = new ImageMetaExtract();
+            String targetFileName = null;
+            try {
+                for (String arg : args) {
                     // single parameter
-                } else {
-                    // multi parameter
-                    if ("-file".equals(param[0])) {
-                        targetFileName = param[1];
+                    if ("-v".equals(arg)) {
+                        System.out.println("Version: " + getVersion());
+                        System.out.println("Language: " + Locale.getDefault().getLanguage());
+                        System.exit(0);
+                    }
+                    if ("-h".equals(arg)) {
+                        usage();
+                        System.exit(0);
+                    }
+                    String[] param = arg.split("=", 2);
+                    if (param.length < 2) {
+                        // single parameter
+                    } else {
+                        // multi parameter
+                        if ("-file".equals(param[0])) {
+                            targetFileName = param[1];
+                        }
                     }
                 }
-            }
 
-            // 必須チェック
-            if (targetFileName == null) {
-                System.out.println("-file argument err ");
-                usage();
-                return;
-            } else {
-                File file = new File(targetFileName);
-                if (!file.exists()) {
-                    System.out.println("file not found:" + file.getAbsolutePath());
+                // 必須チェック
+                if (targetFileName == null) {
+                    System.out.println("-file argument err ");
                     usage();
                     return;
+                } else {
+                    File file = new File(targetFileName);
+                    if (!file.exists()) {
+                        System.out.println("file not found:" + file.getAbsolutePath());
+                        usage();
+                        return;
+                    }
+                    ImageMetaExtract imageMeta = new ImageMetaExtract();
+                    ImageMetaData meta = imageMeta.getMetaData(new FileInputStream(file));
+                    System.out.println("Category\tTagName\tTagType\tDescription");
+                    for (ImageRowData view : meta.getMetaData()) {
+                        System.out.print(view.getTag().getDirectoryName());
+                        System.out.print("\t");
+                        System.out.print(view.getTag().getTagName());
+                        System.out.print("\t");
+                        System.out.print(view.getTag().getTagTypeHex());
+                        System.out.print("\t");
+                        System.out.print(view.getTag().getDescription());
+                        System.out.println();
+                    }
+                    return;
                 }
-                ImageMetaExtract imageMeta = new ImageMetaExtract();
-                ImageMetaData meta = imageMeta.getMetaData(new FileInputStream(file));
-                System.out.println("Category\tTagName\tTagType\tDescription");
-                for (ImageRowData view : meta.getMetaData()) {
-                    System.out.print(view.getTag().getDirectoryName());
-                    System.out.print("\t");
-                    System.out.print(view.getTag().getTagName());
-                    System.out.print("\t");
-                    System.out.print(view.getTag().getTagTypeHex());
-                    System.out.print("\t");
-                    System.out.print(view.getTag().getDescription());
-                    System.out.println();
-                }
-                return;
+            } catch (Exception ex) {
+                String errmsg = String.format("%s: %s", ex.getClass().getName(), ex.getMessage());
+                System.out.println(errmsg);
+                logger.log(Level.SEVERE, ex.getMessage(), ex);
+                usage();
             }
-
         } catch (Exception ex) {
-            String errmsg = String.format("%s: %s", ex.getClass().getName(), ex.getMessage());
-            System.out.println(errmsg);
-            logger.log(Level.SEVERE, ex.getMessage(), ex);
-            usage();
+                logger.log(Level.SEVERE, ex.getMessage(), ex);
         }
     }
 

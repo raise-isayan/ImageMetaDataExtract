@@ -46,7 +46,7 @@ public class MetaDataTab extends javax.swing.JPanel implements IBurpMessageTab {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPane1 = new javax.swing.JScrollPane();
+        scrollMetaData = new javax.swing.JScrollPane();
         tableMetaData = new javax.swing.JTable();
 
         setLayout(new java.awt.BorderLayout());
@@ -77,14 +77,14 @@ public class MetaDataTab extends javax.swing.JPanel implements IBurpMessageTab {
                 return canEdit [columnIndex];
             }
         });
-        jScrollPane1.setViewportView(tableMetaData);
+        scrollMetaData.setViewportView(tableMetaData);
 
-        add(jScrollPane1, java.awt.BorderLayout.CENTER);
+        add(scrollMetaData, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane scrollMetaData;
     private javax.swing.JTable tableMetaData;
     // End of variables declaration//GEN-END:variables
 

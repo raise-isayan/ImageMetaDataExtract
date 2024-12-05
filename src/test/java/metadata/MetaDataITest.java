@@ -2,21 +2,36 @@ package metadata;
 
 import com.drew.imaging.FileType;
 import extension.helpers.HttpMessageWapper;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.stream.ImageInputStream;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Node;
 
 /**
  *
@@ -55,12 +70,10 @@ public class MetaDataITest {
         MetaDataITest.class.getResource("/resources/test-jpg.png"),
         MetaDataITest.class.getResource("/resources/test-empty.jpg"),
         MetaDataITest.class.getResource("/resources/test-json.jpg"),
-        MetaDataITest.class.getResource("/resources/test.jpg"),
-    };
+        MetaDataITest.class.getResource("/resources/test.jpg"),};
 
     private final URL[] IMAGE_DOCUMENT_URLS = new URL[]{
-        MetaDataITest.class.getResource("/resources/test.pdf"),
-    };
+        MetaDataITest.class.getResource("/resources/test.pdf"),};
 
     @Test
     public void testFileType() {
@@ -73,7 +86,6 @@ public class MetaDataITest {
             }
         }
     }
-
 
     /**
      * Test of getMetaData method, of class MetaData.
@@ -184,9 +196,7 @@ public class MetaDataITest {
         }
     }
 
-
     public final static Pattern HTTP_LINESEP = Pattern.compile("\\r\\n\\r\\n");
-
 
     @Test
     public void testCrlf() {
@@ -199,5 +209,64 @@ public class MetaDataITest {
         System.out.println("after msg:" + msg);
     }
 
+    @Test
+    public void testImageIOMetadata() {
+        System.out.println("testImageIOMetadata");
+        for (URL u : IMAGE_URLS) {
+            try {
+                File file = new File(u.toURI());
+                System.out.println("image file name:" + file);
+                readMetadata(file);
+            } catch (URISyntaxException ex) {
+                fail(ex);
+            }
+        }
+        for (URL u : IMAGE_DOCUMENT_URLS) {
+            try {
+                File file = new File(u.toURI());
+                System.out.println("document file name:" + file);
+                readMetadata(file);
+            } catch (URISyntaxException ex) {
+                fail(ex);
+            }
+        }
+    }
+
+    private void readMetadata(File file) {
+        try {
+            ImageInputStream iis = ImageIO.createImageInputStream(file);
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
+            if (readers.hasNext()) {
+                ImageReader reader = readers.next();
+                reader.setInput(iis, true);
+                IIOMetadata metadata = reader.getImageMetadata(0);
+                String[] names = metadata.getMetadataFormatNames();
+                int length = names.length;
+                for (int i = 0; i < length; i++) {
+                    System.out.println("Format name: " + names[i]);
+                    System.out.println(prettyXml(metadata.getAsTree(names[i]), true));
+                }
+            }
+        } catch (Exception ex) {
+            fail(ex);
+        }
+    }
+
+    public static String prettyXml(Node root, boolean pretty) throws IOException {
+        StringWriter sw = new StringWriter();
+        Transformer transformer;
+        try {
+            transformer = TransformerFactory.newInstance()
+                    .newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, pretty ? "yes" : "no");
+            transformer.transform(new DOMSource(root),
+                    new StreamResult(sw));
+        } catch (TransformerConfigurationException ex) {
+            throw new IOException(ex);
+        } catch (TransformerException ex) {
+            throw new IOException(ex);
+        }
+        return sw.toString();
+    }
 
 }
