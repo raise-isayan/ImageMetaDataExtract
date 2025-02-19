@@ -129,10 +129,10 @@ public class ImageMetaData {
     }
 
     public static boolean supportMimeType(String mimeType) {
-        for (Iterator<FileType> ite = SUPPORT_FILE_TYPES.iterator(); ite.hasNext(); ) {
-            FileType fileType  = ite.next();
+        for (Iterator<FileType> ite = SUPPORT_FILE_TYPES.iterator(); ite.hasNext();) {
+            FileType fileType = ite.next();
             if (fileType.getMimeType().equals(mimeType)) {
-               return true;
+                return true;
             }
         }
         return false;

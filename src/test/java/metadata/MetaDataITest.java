@@ -64,7 +64,8 @@ public class MetaDataITest {
         MetaDataITest.class.getResource("/resources/test.bmp"),
         MetaDataITest.class.getResource("/resources/test.gif"),
         MetaDataITest.class.getResource("/resources/test.tiff"),
-        MetaDataITest.class.getResource("/resources/test.heic"),};
+        MetaDataITest.class.getResource("/resources/test.heic"),
+        MetaDataITest.class.getResource("/resources/test.webp"),};
 
     private final URL[] IMAGE_IGNORE_URLS = new URL[]{
         MetaDataITest.class.getResource("/resources/test-jpg.png"),
