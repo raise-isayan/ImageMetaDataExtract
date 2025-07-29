@@ -2,6 +2,7 @@ package metadata;
 
 import com.drew.imaging.FileType;
 import extension.helpers.HttpMessageWapper;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -71,7 +72,9 @@ public class MetaDataITest {
         MetaDataITest.class.getResource("/resources/test-jpg.png"),
         MetaDataITest.class.getResource("/resources/test-empty.jpg"),
         MetaDataITest.class.getResource("/resources/test-json.jpg"),
+        MetaDataITest.class.getResource("/resources/test.html"),
         MetaDataITest.class.getResource("/resources/test.jpg"),};
+
 
     private final URL[] IMAGE_DOCUMENT_URLS = new URL[]{
         MetaDataITest.class.getResource("/resources/test.pdf"),};
@@ -105,6 +108,7 @@ public class MetaDataITest {
                     System.out.println("FileTypeName:" + metadata.getFileTypeName());
                     System.out.println("FileTypeExtension:" + metadata.getFileTypeExtension());
                     System.out.println("FileMimeType:" + metadata.getFileMimeType());
+                    assertTrue(metadata.hasMetaData());
                     for (ImageRowData view : metadata.getMetaData()) {
                         System.out.println(view.getTag().getDirectoryName() + ">" + view.getTag().getTagName() + ":" + view.getTag().toString());
                         System.out.println("\tTagTypeHex:" + view.getTag().getTagTypeHex());
@@ -127,20 +131,31 @@ public class MetaDataITest {
                 try {
                     System.out.println("url:" + u.toURI());
                     FileInputStream istm = new FileInputStream(Paths.get(u.toURI()).toFile());
-                    ImageMetaData metadata = imageMeta.getMetaData(istm);
-                    System.out.println("FileType:" + metadata.getFileType());
-                    System.out.println("FileTypeName:" + metadata.getFileTypeName());
-                    System.out.println("FileTypeExtension:" + metadata.getFileTypeExtension());
-                    System.out.println("FileMimeType:" + metadata.getFileMimeType());
-                    for (ImageRowData view : metadata.getMetaData()) {
-                        System.out.println(view.getTag().getDirectoryName() + ">" + view.getTag().getTagName() + ":" + view.getTag().toString());
-                        System.out.println("\tTagTypeHex:" + view.getTag().getTagTypeHex());
-                        System.out.println("\tTagName:" + view.getTag().getTagName());
-                        System.out.println("\tDescription:" + view.getTag().getDescription());
+                    try (BufferedInputStream bostm = new BufferedInputStream(istm)) {
+                        FileType fileType = ImageMetaData.detectFileType(bostm);
+                        System.out.println("FileType:" + fileType);
+                        if (fileType == FileType.Unknown) {
+                            continue;
+                        }
+                        bostm.reset();
+                        ImageMetaData metadata = imageMeta.getMetaData(bostm);
+                        System.out.println("FileType:" + metadata.getFileType());
+                        System.out.println("FileTypeName:" + metadata.getFileTypeName());
+                        System.out.println("FileTypeExtension:" + metadata.getFileTypeExtension());
+                        System.out.println("FileMimeType:" + metadata.getFileMimeType());
+                        if (!metadata.hasMetaData()) {
+                            continue;
+                        }
+                        for (ImageRowData view : metadata.getMetaData()) {
+                            System.out.println(view.getTag().getDirectoryName() + ">" + view.getTag().getTagName() + ":" + view.getTag().toString());
+                            System.out.println("\tTagTypeHex:" + view.getTag().getTagTypeHex());
+                            System.out.println("\tTagName:" + view.getTag().getTagName());
+                            System.out.println("\tDescription:" + view.getTag().getDescription());
+                        }
                     }
                 } catch (URISyntaxException | IOException ex) {
                     System.out.println("exception:" + ex.getClass().getName() + ":" + ex.getMessage());
-//                    fail(ex);
+                    fail(ex);
                 }
             }
         }

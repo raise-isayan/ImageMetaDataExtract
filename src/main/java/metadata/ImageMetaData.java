@@ -63,6 +63,10 @@ public class ImageMetaData {
         return !views.isEmpty();
     }
 
+    public boolean hasErrors() {
+        return this.metadata.hasErrors();
+    }
+
     public FileType getFileType() {
         FileType fileType = FileType.Unknown;
         String fileTypeName = getFileTypeName();
@@ -89,14 +93,6 @@ public class ImageMetaData {
     public String getFileMimeType() {
         FileTypeDirectory fileType = metadata.getFirstDirectoryOfType(FileTypeDirectory.class);
         return fileType.getString(FileTypeDirectory.TAG_DETECTED_FILE_MIME_TYPE);
-    }
-
-    public static FileType detectFileType(InputStream istm) throws IOException {
-        if (istm.markSupported()) {
-            return FileTypeDetector.detectFileType(istm);
-        } else {
-            return FileTypeDetector.detectFileType(new BufferedInputStream(istm));
-        }
     }
 
     private final static EnumSet<FileType> SUPPORT_FILE_TYPES = EnumSet.of(
@@ -136,6 +132,14 @@ public class ImageMetaData {
             }
         }
         return false;
+    }
+
+    public static FileType detectFileType(BufferedInputStream istm) throws IOException {
+        return FileTypeDetector.detectFileType(istm);
+    }
+
+    public static FileType detectFileType(InputStream istm) throws IOException {
+        return FileTypeDetector.detectFileType(istm);
     }
 
 }

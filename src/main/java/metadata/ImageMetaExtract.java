@@ -1,8 +1,11 @@
 package metadata;
 
+import com.drew.imaging.FileType;
+import com.drew.imaging.FileTypeDetector;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Metadata;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -16,6 +19,7 @@ public class ImageMetaExtract {
     private final static Logger logger = Logger.getLogger(ImageMetaExtract.class.getName());
 
     private final static java.util.ResourceBundle RELEASE = java.util.ResourceBundle.getBundle("burp/resources/release");
+
 
     public ImageMetaExtract() {
     }
