@@ -9,10 +9,12 @@ import burp.api.montoya.scanner.audit.issues.AuditIssue;
 import burp.api.montoya.scanner.audit.issues.AuditIssueConfidence;
 import burp.api.montoya.scanner.audit.issues.AuditIssueDefinition;
 import burp.api.montoya.scanner.audit.issues.AuditIssueSeverity;
+import burp.api.montoya.scanner.scancheck.PassiveScanCheck;
 import com.drew.imaging.FileType;
 import extension.burp.Confidence;
 import extension.burp.Severity;
 import extension.burp.scanner.IssueItem;
+import extension.burp.scanner.PassiveScanCheckAdapter;
 import extension.burp.scanner.ScannerCheckAdapter;
 import extension.burp.scanner.SignatureScanBase;
 import extension.helpers.HttpResponseWapper;
@@ -43,171 +45,185 @@ public class ImageMetaDataScan extends SignatureScanBase<ImageMetaDataIssueItem>
     }
 
     @Override
-    public ScanCheck passiveScanCheck() {
-        final ImageMetaExtract meta = new ImageMetaExtract();
+    public PassiveScanCheck passiveScanCheck() {
+        return new PassiveScanCheckAdapter(this.getIssueName()) {
+            @Override
+            public AuditResult doCheck(HttpRequestResponse baseRequestResponse) {
+                return doPassiveScanCheck(baseRequestResponse);
+            }
+        };
+    }
+
+    @Override
+    public ScanCheck scannerScanCheck() {
         return new ScannerCheckAdapter() {
             @Override
             public AuditResult passiveAudit(HttpRequestResponse baseRequestResponse) {
-                List<AuditIssue> issues = new ArrayList<>();
-                try {
-                    // Response判定
-                    HttpResponseWapper wrapResponse = new HttpResponseWapper(baseRequestResponse.response());
-                    if (wrapResponse.hasHttpResponse() && wrapResponse.getBodyByte().length > 0) {
-                        FileType fileType = ImageMetaData.detectFileType(new ByteArrayInputStream(wrapResponse.getBodyByte()));
-                        if (!ImageMetaData.supportFileType(fileType)) {
-                            return AuditResult.auditResult(issues);
-                        }
-                        ImageMetaData imageMeta = meta.getMetaData(new ByteArrayInputStream(wrapResponse.getBodyByte()));
-                        if (imageMeta.hasMetaData()) {
-                            Map<String, List<ImageRowData>> metaGroup = imageMeta.getMetaDataGrop();
-                            for (String key : metaGroup.keySet()) {
-                                List<ImageRowData> rows = metaGroup.get(key);
-                                /* Content-Type Mismatch */
-                                String mimeType = wrapResponse.getContentMimeType();
-                                if (mimeType != null
-                                        && (!mimeType.equals(imageMeta.getFileMimeType())
-                                        || (FileType.Unknown.equals(imageMeta.getFileType()) && ImageMetaData.supportMimeType(mimeType)))) {
-                                    final StringBuilder detail = new StringBuilder();
-                                    detail.append("<h4>Content-Type mismatch of image:</h4>");
-                                    detail.append("<div>");
-                                    detail.append("<p>Response Content-Type Header:</p>");
-                                    detail.append("<p>");
-                                    detail.append("<code>");
-                                    detail.append(HttpUtil.toHtmlEncode(mimeType));
-                                    detail.append("</code>");
-                                    detail.append("</p>");
-                                    detail.append("<p>Image of MimeType:</p>");
-                                    detail.append("<p>");
-                                    detail.append("<code>");
-                                    if (imageMeta.getFileMimeType() != null) {
-                                        detail.append(HttpUtil.toHtmlEncode(imageMeta.getFileMimeType()));
-                                    } else {
-                                        detail.append(FileType.Unknown.getName());
-                                    }
-                                    detail.append("</code>");
-                                    detail.append("</p>");
-
-                                    final String ISSUE_BACKGROUND = "\r\n"
-                                            + "<h4>Content-Type mismatch of image:</h4>"
-                                            + "<ul>"
-                                            + "Response Content-Type and image format mismatch"
-                                            + "</ul>";
-
-                                    AuditIssue issueItem = AuditIssue.auditIssue(
-                                            getIssueName(),
-                                            detail.toString(),
-                                            null,
-                                            baseRequestResponse.request().url(),
-                                            AuditIssueSeverity.INFORMATION, AuditIssueConfidence.CERTAIN,
-                                            ISSUE_BACKGROUND,
-                                            null,
-                                            AuditIssueSeverity.INFORMATION,
-                                            baseRequestResponse);
-                                    issues.add(issueItem);
-                                }
-                                /* JPEG */
-                                if (((FileType.Jpeg.getName().equals(imageMeta.getFileTypeName()) && key.startsWith("JpegComment")))) {
-                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
-                                    // メールアドレス含む場合はリスクをあげる
-                                    boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
-                                    ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
-                                    issueItem.setType(imageMeta.getFileTypeName() + " " + "Comment");
-                                    issueItem.setMessageIsRequest(false);
-                                    issueItem.setServerity(Severity.INFORMATION);
-                                    if (containMail) {
-                                        issueItem.setServerity(Severity.LOW);
-                                    }
-                                    issueItem.setConfidence(Confidence.CERTAIN);
-                                    issueItem.setCaptureValue("");
-                                    issueItem.setCategory(key);
-                                    issueItem.setMetaRows(rows);
-                                    issueList.add(issueItem);
-                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
-                                }
-                                if (((FileType.Jpeg.getName().equals(imageMeta.getFileTypeName()))
-                                        || (FileType.Tiff.getName().equals(imageMeta.getFileTypeName()))
-                                        || (FileType.Heif.getName().equals(imageMeta.getFileTypeName()))
-                                        || (FileType.WebP.getName().equals(imageMeta.getFileTypeName())))
-                                        && key.startsWith("Exif IFD")) {
-                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
-                                    // メールアドレス含む場合はリスクをあげる
-                                    boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
-                                    ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
-                                    issueItem.setType(imageMeta.getFileTypeName() + " " + "Exif");
-                                    issueItem.setMessageIsRequest(false);
-                                    issueItem.setServerity(Severity.INFORMATION);
-                                    if (containMail) {
-                                        issueItem.setServerity(Severity.LOW);
-                                    }
-                                    issueItem.setConfidence(Confidence.CERTAIN);
-                                    issueItem.setCaptureValue("");
-                                    issueItem.setCategory(key);
-                                    issueItem.setMetaRows(rows);
-                                    issueList.add(issueItem);
-                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
-                                } else if (((FileType.Jpeg.getName().equals(imageMeta.getFileTypeName()))
-                                        || (FileType.Tiff.getName().equals(imageMeta.getFileTypeName()))
-                                        || (FileType.Heif.getName().equals(imageMeta.getFileTypeName()))
-                                        || (FileType.WebP.getName().equals(imageMeta.getFileTypeName())))
-                                        && key.startsWith("GPS")) {
-                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
-                                    ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
-                                    issueItem.setType(imageMeta.getFileTypeName() + " " + "GPS");
-                                    issueItem.setMessageIsRequest(false);
-                                    issueItem.setServerity(Severity.LOW);
-                                    issueItem.setConfidence(Confidence.CERTAIN);
-                                    issueItem.setCaptureValue("");
-                                    issueItem.setCategory(key);
-                                    issueItem.setMetaRows(rows);
-                                    issueList.add(issueItem);
-                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
-                                }
-                                /* PNG */
-                                if (FileType.Png.getName().equals(imageMeta.getFileTypeName())
-                                        && key.startsWith("PNG-tEXt")) {
-                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
-                                    // メールアドレス含む場合はリスクをあげる
-                                    boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
-                                    ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
-                                    issueItem.setType(imageMeta.getFileTypeName() + " " + "tExt");
-                                    issueItem.setMessageIsRequest(false);
-                                    issueItem.setServerity(Severity.INFORMATION);
-                                    if (containMail) {
-                                        issueItem.setServerity(Severity.LOW);
-                                    }
-                                    issueItem.setConfidence(Confidence.CERTAIN);
-                                    issueItem.setCaptureValue("");
-                                    issueItem.setCategory(key);
-                                    issueItem.setMetaRows(rows);
-                                    issueList.add(issueItem);
-                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
-                                }
-                                /* GIF */
-                                if ((FileType.Gif.getName().equals(imageMeta.getFileTypeName()) && key.startsWith("GIF Comment"))) {
-                                    boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
-                                    List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
-                                    ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
-                                    issueItem.setType(imageMeta.getFileTypeName() + " " + "Comment");
-                                    issueItem.setMessageIsRequest(false);
-                                    issueItem.setServerity(Severity.INFORMATION);
-                                    if (containMail) {
-                                        issueItem.setServerity(Severity.LOW);
-                                    }
-                                    issueItem.setConfidence(Confidence.CERTAIN);
-                                    issueItem.setCaptureValue("");
-                                    issueItem.setMetaRows(rows);
-                                    issueList.add(issueItem);
-                                    issues.add(makeScanIssue(baseRequestResponse, issueList));
-                                }
-                            }
-                        }
-                    }
-                } catch (IOException ex) {
-                    logger.log(Level.SEVERE, ex.getMessage(), ex);
-                }
-                return AuditResult.auditResult(issues);
+                return doPassiveScanCheck(baseRequestResponse);
             }
         };
+    }
+
+    private AuditResult doPassiveScanCheck(HttpRequestResponse baseRequestResponse) {
+        final ImageMetaExtract meta = new ImageMetaExtract();
+        List<AuditIssue> issues = new ArrayList<>();
+        try {
+            // Response判定
+            HttpResponseWapper wrapResponse = new HttpResponseWapper(baseRequestResponse.response());
+            if (wrapResponse.hasHttpResponse() && wrapResponse.getBodyByte().length > 0) {
+                FileType fileType = ImageMetaData.detectFileType(new ByteArrayInputStream(wrapResponse.getBodyByte()));
+                if (!ImageMetaData.supportFileType(fileType)) {
+                    return AuditResult.auditResult(issues);
+                }
+                ImageMetaData imageMeta = meta.getMetaData(new ByteArrayInputStream(wrapResponse.getBodyByte()));
+                if (imageMeta.hasMetaData()) {
+                    Map<String, List<ImageRowData>> metaGroup = imageMeta.getMetaDataGrop();
+                    for (String key : metaGroup.keySet()) {
+                        List<ImageRowData> rows = metaGroup.get(key);
+                        /* Content-Type Mismatch */
+                        String mimeType = wrapResponse.getContentMimeType();
+                        if (mimeType != null
+                                && (!mimeType.equals(imageMeta.getFileMimeType())
+                                || (FileType.Unknown.equals(imageMeta.getFileType()) && ImageMetaData.supportMimeType(mimeType)))) {
+                            final StringBuilder detail = new StringBuilder();
+                            detail.append("<h4>Content-Type mismatch of image:</h4>");
+                            detail.append("<div>");
+                            detail.append("<p>Response Content-Type Header:</p>");
+                            detail.append("<p>");
+                            detail.append("<code>");
+                            detail.append(HttpUtil.toHtmlEncode(mimeType));
+                            detail.append("</code>");
+                            detail.append("</p>");
+                            detail.append("<p>Image of MimeType:</p>");
+                            detail.append("<p>");
+                            detail.append("<code>");
+                            if (imageMeta.getFileMimeType() != null) {
+                                detail.append(HttpUtil.toHtmlEncode(imageMeta.getFileMimeType()));
+                            } else {
+                                detail.append(FileType.Unknown.getName());
+                            }
+                            detail.append("</code>");
+                            detail.append("</p>");
+
+                            final String ISSUE_BACKGROUND = "\r\n"
+                                    + "<h4>Content-Type mismatch of image:</h4>"
+                                    + "<ul>"
+                                    + "Response Content-Type and image format mismatch"
+                                    + "</ul>";
+
+                            AuditIssue issueItem = AuditIssue.auditIssue(
+                                    getIssueName(),
+                                    detail.toString(),
+                                    null,
+                                    baseRequestResponse.request().url(),
+                                    AuditIssueSeverity.INFORMATION, AuditIssueConfidence.CERTAIN,
+                                    ISSUE_BACKGROUND,
+                                    null,
+                                    AuditIssueSeverity.INFORMATION,
+                                    baseRequestResponse);
+                            issues.add(issueItem);
+                        }
+                        /* JPEG */
+                        if (((FileType.Jpeg.getName().equals(imageMeta.getFileTypeName()) && key.startsWith("JpegComment")))) {
+                            List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
+                            // メールアドレス含む場合はリスクをあげる
+                            boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
+                            ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
+                            issueItem.setType(imageMeta.getFileTypeName() + " " + "Comment");
+                            issueItem.setMessageIsRequest(false);
+                            issueItem.setServerity(Severity.INFORMATION);
+                            if (containMail) {
+                                issueItem.setServerity(Severity.LOW);
+                            }
+                            issueItem.setConfidence(Confidence.CERTAIN);
+                            issueItem.setCaptureValue("");
+                            issueItem.setCategory(key);
+                            issueItem.setMetaRows(rows);
+                            issueList.add(issueItem);
+                            issues.add(makeScanIssue(baseRequestResponse, issueList));
+                        }
+                        if (((FileType.Jpeg.getName().equals(imageMeta.getFileTypeName()))
+                                || (FileType.Tiff.getName().equals(imageMeta.getFileTypeName()))
+                                || (FileType.Heif.getName().equals(imageMeta.getFileTypeName()))
+                                || (FileType.WebP.getName().equals(imageMeta.getFileTypeName())))
+                                && key.startsWith("Exif IFD")) {
+                            List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
+                            // メールアドレス含む場合はリスクをあげる
+                            boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
+                            ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
+                            issueItem.setType(imageMeta.getFileTypeName() + " " + "Exif");
+                            issueItem.setMessageIsRequest(false);
+                            issueItem.setServerity(Severity.INFORMATION);
+                            if (containMail) {
+                                issueItem.setServerity(Severity.LOW);
+                            }
+                            issueItem.setConfidence(Confidence.CERTAIN);
+                            issueItem.setCaptureValue("");
+                            issueItem.setCategory(key);
+                            issueItem.setMetaRows(rows);
+                            issueList.add(issueItem);
+                            issues.add(makeScanIssue(baseRequestResponse, issueList));
+                        } else if (((FileType.Jpeg.getName().equals(imageMeta.getFileTypeName()))
+                                || (FileType.Tiff.getName().equals(imageMeta.getFileTypeName()))
+                                || (FileType.Heif.getName().equals(imageMeta.getFileTypeName()))
+                                || (FileType.WebP.getName().equals(imageMeta.getFileTypeName())))
+                                && key.startsWith("GPS")) {
+                            List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
+                            ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
+                            issueItem.setType(imageMeta.getFileTypeName() + " " + "GPS");
+                            issueItem.setMessageIsRequest(false);
+                            issueItem.setServerity(Severity.LOW);
+                            issueItem.setConfidence(Confidence.CERTAIN);
+                            issueItem.setCaptureValue("");
+                            issueItem.setCategory(key);
+                            issueItem.setMetaRows(rows);
+                            issueList.add(issueItem);
+                            issues.add(makeScanIssue(baseRequestResponse, issueList));
+                        }
+                        /* PNG */
+                        if (FileType.Png.getName().equals(imageMeta.getFileTypeName())
+                                && key.startsWith("PNG-tEXt")) {
+                            List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
+                            // メールアドレス含む場合はリスクをあげる
+                            boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
+                            ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
+                            issueItem.setType(imageMeta.getFileTypeName() + " " + "tExt");
+                            issueItem.setMessageIsRequest(false);
+                            issueItem.setServerity(Severity.INFORMATION);
+                            if (containMail) {
+                                issueItem.setServerity(Severity.LOW);
+                            }
+                            issueItem.setConfidence(Confidence.CERTAIN);
+                            issueItem.setCaptureValue("");
+                            issueItem.setCategory(key);
+                            issueItem.setMetaRows(rows);
+                            issueList.add(issueItem);
+                            issues.add(makeScanIssue(baseRequestResponse, issueList));
+                        }
+                        /* GIF */
+                        if ((FileType.Gif.getName().equals(imageMeta.getFileTypeName()) && key.startsWith("GIF Comment"))) {
+                            boolean containMail = rows.stream().anyMatch(row -> MatchUtil.containsMailAddress(row.getTag().getDescription()));
+                            List<ImageMetaDataIssueItem> issueList = new ArrayList<>();
+                            ImageMetaDataIssueItem issueItem = new ImageMetaDataIssueItem();
+                            issueItem.setType(imageMeta.getFileTypeName() + " " + "Comment");
+                            issueItem.setMessageIsRequest(false);
+                            issueItem.setServerity(Severity.INFORMATION);
+                            if (containMail) {
+                                issueItem.setServerity(Severity.LOW);
+                            }
+                            issueItem.setConfidence(Confidence.CERTAIN);
+                            issueItem.setCaptureValue("");
+                            issueItem.setMetaRows(rows);
+                            issueList.add(issueItem);
+                            issues.add(makeScanIssue(baseRequestResponse, issueList));
+                        }
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, ex.getMessage(), ex);
+        }
+        return AuditResult.auditResult(issues);
     }
 
     public AuditIssue makeScanIssue(HttpRequestResponse messageInfo, List<ImageMetaDataIssueItem> issueItems) {
