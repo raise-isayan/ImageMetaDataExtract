@@ -7,6 +7,7 @@ import burp.api.montoya.ui.editor.extension.HttpResponseEditorProvider;
 import extension.burp.BurpExtensionImpl;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import metadata.ImageMetaExtract;
 import metadata.MetaDataEditor;
 import passive.signature.ImageMetaDataSignature;
 
@@ -17,8 +18,6 @@ import passive.signature.ImageMetaDataSignature;
 public class BurpExtension extends BurpExtensionImpl {
 
     private final static Logger logger = Logger.getLogger(BurpExtension.class.getName());
-
-    private final static java.util.ResourceBundle BUNDLE = java.util.ResourceBundle.getBundle("burp/resources/release");
 
     public BurpExtension() {
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
@@ -41,7 +40,7 @@ public class BurpExtension extends BurpExtensionImpl {
     @Override
     public void initialize(MontoyaApi api) {
         super.initialize(api);
-        api().extension().setName(BUNDLE.getString("projname"));
+        api().extension().setName(ImageMetaExtract.getProjectName());
         api().userInterface().registerHttpResponseEditorProvider(this.responseMetaDataTab);
         ImageMetaDataSignature signature = new ImageMetaDataSignature();
         api().scanner().registerScanCheck(signature.getSignatureScan().scannerScanCheck());

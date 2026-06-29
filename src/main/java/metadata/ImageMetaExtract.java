@@ -34,6 +34,10 @@ public class ImageMetaExtract {
         return RELEASE.getString("version");
     }
 
+    public static String getProjectName() {
+        return RELEASE.getString("projname");
+    }
+
     /**
      * @param args the command line arguments
      */
